@@ -1,100 +1,171 @@
 # SchemaCraft
 
-> **Describe your app. Get a production-ready database.**
+Production-ready database schema generation from plain-English app descriptions.
 
-An AI-powered database schema generator that converts natural language into normalized, production-ready database schemas.
+You describe the product. SchemaCraft returns a normalized schema (tables, columns, relationships, indexes) and export formats—so you can spend less time debating foreign keys and more time shipping.
 
-## Features
+---
 
-- **Natural Language Input** — Describe your application in plain English
-- **Instant Schema Generation** — Get normalized tables, relationships, and indexes
-- **Multiple Export Formats** — PostgreSQL, MySQL, Prisma, Drizzle, JSON
-- **Visual Schema Browser** — Expandable table cards with column details
-- **AI Recommendations** — Suggestions for improvements and optimizations
+## What you get
 
-## Quick Start
+- **Schema generation**: tables, columns, constraints, relationships, indexes
+- **Export formats**: PostgreSQL, MySQL, Prisma, Drizzle
+- **Strict JSON output**: predictable and easy to consume
+- **Deployable stack**: FastAPI backend + Next.js frontend
 
-### Prerequisites
+---
 
-- Python 3.11+
-- Node.js 18+
-- Groq API Key (free at [console.groq.com](https://console.groq.com))
+## Tech stack
 
-### Setup
+**Backend**
+- Python + FastAPI
+- LLM provider via env vars: Groq or OpenAI
 
-```bash
-# Clone
-git clone https://github.com/yourusername/schemacraft.git
-cd schemacraft
+**Frontend**
+- Next.js + React + TypeScript
+- Tailwind CSS
+- shadcn-style component structure (`src/components/ui`)
 
-# Backend
-cd backend
-pip install -r requirements.txt
-cp .env.example .env
-# Add your GROQ_API_KEY to .env
+---
 
-# Frontend
-cd ../frontend
-npm install
+## Repo structure
+
+```text
+.
+├─ backend/
+│  ├─ app/
+│  │  ├─ main.py
+│  │  ├─ config.py
+│  │  ├─ routes/
+│  │  └─ services/
+│  └─ requirements.txt
+└─ frontend/
+	 ├─ src/
+	 ├─ package.json
+	 └─ next.config.ts
 ```
 
-### Run
+---
+
+## Local development
+
+### Backend (FastAPI)
 
 ```bash
-# Terminal 1 — Backend
 cd backend
-uvicorn app.main:app --reload --port 8000
+python -m venv .venv
 
-# Terminal 2 — Frontend
+# Windows
+.\.venv\Scripts\activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Helpful URLs:
+- Health: `http://127.0.0.1:8000/api/health`
+- Docs: `http://127.0.0.1:8000/docs`
+
+### Frontend (Next.js)
+
+```bash
 cd frontend
+npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+---
 
-## Tech Stack
+## Environment variables
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 15, Tailwind CSS, Framer Motion, Monaco Editor |
-| Backend | FastAPI, Pydantic |
-| AI | Groq (Llama 3.3 70B) |
+### Backend
 
-## API
+Pick **one** provider (yes, one):
 
+**Groq**
+- `LLM_PROVIDER=groq`
+- `GROQ_API_KEY=...`
+
+**OpenAI**
+- `LLM_PROVIDER=openai`
+- `OPENAI_API_KEY=...`
+
+**CORS** (recommended JSON list):
+- `CORS_ORIGINS=["http://localhost:3000"]`
+
+### Frontend
+
+- `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000` (local)
+- `NEXT_PUBLIC_API_URL=https://<your-backend-service>.onrender.com` (production)
+
+---
+
+## Deploy on Render
+
+SchemaCraft deploys cleanly on Render as **two Web Services**.
+
+### 1) Backend (Render → Web Service)
+
+- **Root Directory:** `backend`
+- **Build Command:**
+	```bash
+	pip install -r requirements.txt
+	```
+- **Start Command:**
+	```bash
+	uvicorn app.main:app --host 0.0.0.0 --port $PORT
+	```
+- **Environment Variables:**
+	- `LLM_PROVIDER` and the matching API key
+	- `CORS_ORIGINS` (see below)
+
+### 2) Frontend (Render → Web Service)
+
+- **Root Directory:** `frontend`
+- **Build Command:**
+	```bash
+	npm ci && npm run build
+	```
+- **Start Command:**
+	```bash
+	npm run start
+	```
+- **Environment Variables:**
+	- `NEXT_PUBLIC_API_URL=https://<your-backend-service>.onrender.com`
+
+---
+
+## Production CORS (already deployed frontend)
+
+Frontend URL:
+- `https://schemacraf-31.onrender.com`
+
+Set this on the **backend** Render service:
+
+```bash
+CORS_ORIGINS=["https://schemacraf-31.onrender.com"]
 ```
-POST /api/generate
-Body: { "description": "...", "complexity": "simple|standard|enterprise" }
 
-POST /api/export
-Body: { "schema": {...}, "format": "postgresql|mysql|prisma|drizzle" }
+Note (because browsers are pedantic): **Origins don’t include trailing slashes**.
 
-GET /api/examples
-```
+---
 
-## Project Structure
+## Troubleshooting
 
-```
-schemacraft/
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── system_prompt.py
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   └── services/
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   ├── components/
-│   │   └── lib/
-│   └── package.json
-└── README.md
-```
+### CORS blocked in browser
+- Backend is missing the frontend origin in `CORS_ORIGINS`
+- Use JSON list format:
+	- `CORS_ORIGINS=["https://schemacraf-31.onrender.com"]`
 
-## License
+### Frontend can’t reach backend
+- `NEXT_PUBLIC_API_URL` is missing/wrong
+- Backend is down/sleeping (Render free tier likes naps)
 
-MIT
+### Health says LLM isn’t configured
+- You didn’t set `GROQ_API_KEY` or `OPENAI_API_KEY`
+- Or `LLM_PROVIDER` doesn’t match the key you set
+
+---
+
+# Made with Love by Prakshil Patell
+

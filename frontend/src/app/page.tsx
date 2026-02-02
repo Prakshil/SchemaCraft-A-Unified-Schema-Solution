@@ -25,182 +25,13 @@ export default function Home() {
         setSchema(result.schema);
       } else {
         setError(result.error || 'Failed to generate schema');
-        generateDemoSchema(description);
       }
     } catch (err) {
-      generateDemoSchema(description);
+      setError(err instanceof Error ? err.message : 'Failed to generate schema. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }, [complexity]);
-
-  const generateDemoSchema = (description: string) => {
-    const demoSchema: Schema = {
-      name: "application_schema",
-      description: `Database schema for: ${description}`,
-      tables: [
-        {
-          name: "users",
-          description: "Core user accounts with authentication and profile data",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true, description: "Primary identifier" },
-            { name: "email", type: "VARCHAR(255)", nullable: false, primary_key: false, unique: true, description: "User email address" },
-            { name: "password_hash", type: "VARCHAR(255)", nullable: false, primary_key: false, unique: false, description: "Bcrypt hashed password" },
-            { name: "full_name", type: "VARCHAR(100)", nullable: false, primary_key: false, unique: false, description: "Display name" },
-            { name: "avatar_url", type: "TEXT", nullable: true, primary_key: false, unique: false, description: "Profile image URL" },
-            { name: "role", type: "VARCHAR(20)", nullable: false, primary_key: false, unique: false, default: "'member'", description: "User role: admin, member, guest" },
-            { name: "email_verified_at", type: "TIMESTAMP", nullable: true, primary_key: false, unique: false, description: "Email verification timestamp" },
-            { name: "last_login_at", type: "TIMESTAMP", nullable: true, primary_key: false, unique: false, description: "Last successful login" },
-            { name: "created_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()", description: "Account creation time" },
-            { name: "updated_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()", description: "Last profile update" },
-          ],
-          indexes: [
-            { name: "idx_users_email", columns: ["email"], unique: true },
-            { name: "idx_users_role", columns: ["role"], unique: false },
-          ]
-        },
-        {
-          name: "workspaces",
-          description: "Isolated workspace containers for team collaboration",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true, description: "Primary identifier" },
-            { name: "name", type: "VARCHAR(100)", nullable: false, primary_key: false, unique: false, description: "Workspace display name" },
-            { name: "slug", type: "VARCHAR(100)", nullable: false, primary_key: false, unique: true, description: "URL-friendly identifier" },
-            { name: "owner_id", type: "UUID", nullable: false, primary_key: false, unique: false, description: "Workspace creator" },
-            { name: "description", type: "TEXT", nullable: true, primary_key: false, unique: false, description: "Workspace description" },
-            { name: "settings", type: "JSONB", nullable: true, primary_key: false, unique: false, default: "'{}'", description: "Workspace configuration" },
-            { name: "created_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-            { name: "updated_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-          ],
-          indexes: [
-            { name: "idx_workspaces_slug", columns: ["slug"], unique: true },
-            { name: "idx_workspaces_owner", columns: ["owner_id"], unique: false },
-          ]
-        },
-        {
-          name: "workspace_members",
-          description: "Junction table for workspace membership and roles",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true },
-            { name: "workspace_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "user_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "role", type: "VARCHAR(20)", nullable: false, primary_key: false, unique: false, default: "'member'" },
-            { name: "invited_by", type: "UUID", nullable: true, primary_key: false, unique: false },
-            { name: "joined_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-          ],
-          indexes: [
-            { name: "idx_workspace_members_composite", columns: ["workspace_id", "user_id"], unique: true },
-          ]
-        },
-        {
-          name: "projects",
-          description: "Project containers within workspaces",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true },
-            { name: "workspace_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "name", type: "VARCHAR(255)", nullable: false, primary_key: false, unique: false },
-            { name: "description", type: "TEXT", nullable: true, primary_key: false, unique: false },
-            { name: "status", type: "VARCHAR(20)", nullable: false, primary_key: false, unique: false, default: "'active'" },
-            { name: "visibility", type: "VARCHAR(20)", nullable: false, primary_key: false, unique: false, default: "'private'" },
-            { name: "archived_at", type: "TIMESTAMP", nullable: true, primary_key: false, unique: false },
-            { name: "created_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-            { name: "updated_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-          ],
-          indexes: [
-            { name: "idx_projects_workspace", columns: ["workspace_id"], unique: false },
-            { name: "idx_projects_status", columns: ["status"], unique: false },
-          ]
-        },
-        {
-          name: "tasks",
-          description: "Individual work items with assignments and deadlines",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true },
-            { name: "project_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "parent_id", type: "UUID", nullable: true, primary_key: false, unique: false, description: "For subtasks" },
-            { name: "assignee_id", type: "UUID", nullable: true, primary_key: false, unique: false },
-            { name: "created_by", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "title", type: "VARCHAR(255)", nullable: false, primary_key: false, unique: false },
-            { name: "description", type: "TEXT", nullable: true, primary_key: false, unique: false },
-            { name: "status", type: "VARCHAR(20)", nullable: false, primary_key: false, unique: false, default: "'todo'" },
-            { name: "priority", type: "VARCHAR(10)", nullable: false, primary_key: false, unique: false, default: "'medium'" },
-            { name: "due_date", type: "DATE", nullable: true, primary_key: false, unique: false },
-            { name: "estimated_hours", type: "DECIMAL(5,2)", nullable: true, primary_key: false, unique: false },
-            { name: "completed_at", type: "TIMESTAMP", nullable: true, primary_key: false, unique: false },
-            { name: "position", type: "INT", nullable: false, primary_key: false, unique: false, default: "0" },
-            { name: "created_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-            { name: "updated_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-          ],
-          indexes: [
-            { name: "idx_tasks_project", columns: ["project_id"], unique: false },
-            { name: "idx_tasks_assignee", columns: ["assignee_id"], unique: false },
-            { name: "idx_tasks_status", columns: ["status"], unique: false },
-            { name: "idx_tasks_due_date", columns: ["due_date"], unique: false },
-          ]
-        },
-        {
-          name: "comments",
-          description: "Threaded comments on tasks",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true },
-            { name: "task_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "author_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "parent_id", type: "UUID", nullable: true, primary_key: false, unique: false, description: "For replies" },
-            { name: "content", type: "TEXT", nullable: false, primary_key: false, unique: false },
-            { name: "edited_at", type: "TIMESTAMP", nullable: true, primary_key: false, unique: false },
-            { name: "created_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-          ],
-          indexes: [
-            { name: "idx_comments_task", columns: ["task_id"], unique: false },
-            { name: "idx_comments_author", columns: ["author_id"], unique: false },
-          ]
-        },
-        {
-          name: "activity_logs",
-          description: "Audit trail for all entity changes",
-          columns: [
-            { name: "id", type: "UUID", nullable: false, primary_key: true, unique: true },
-            { name: "workspace_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "user_id", type: "UUID", nullable: true, primary_key: false, unique: false },
-            { name: "entity_type", type: "VARCHAR(50)", nullable: false, primary_key: false, unique: false },
-            { name: "entity_id", type: "UUID", nullable: false, primary_key: false, unique: false },
-            { name: "action", type: "VARCHAR(20)", nullable: false, primary_key: false, unique: false },
-            { name: "changes", type: "JSONB", nullable: true, primary_key: false, unique: false },
-            { name: "ip_address", type: "INET", nullable: true, primary_key: false, unique: false },
-            { name: "created_at", type: "TIMESTAMP", nullable: false, primary_key: false, unique: false, default: "NOW()" },
-          ],
-          indexes: [
-            { name: "idx_activity_workspace", columns: ["workspace_id"], unique: false },
-            { name: "idx_activity_entity", columns: ["entity_type", "entity_id"], unique: false },
-            { name: "idx_activity_created", columns: ["created_at"], unique: false },
-          ]
-        },
-      ],
-      relationships: [
-        { from_table: "workspaces", from_column: "owner_id", to_table: "users", to_column: "id", type: "many_to_one", on_delete: "RESTRICT" },
-        { from_table: "workspace_members", from_column: "workspace_id", to_table: "workspaces", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "workspace_members", from_column: "user_id", to_table: "users", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "projects", from_column: "workspace_id", to_table: "workspaces", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "tasks", from_column: "project_id", to_table: "projects", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "tasks", from_column: "assignee_id", to_table: "users", to_column: "id", type: "many_to_one", on_delete: "SET NULL" },
-        { from_table: "tasks", from_column: "created_by", to_table: "users", to_column: "id", type: "many_to_one", on_delete: "RESTRICT" },
-        { from_table: "tasks", from_column: "parent_id", to_table: "tasks", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "comments", from_column: "task_id", to_table: "tasks", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "comments", from_column: "author_id", to_table: "users", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "activity_logs", from_column: "workspace_id", to_table: "workspaces", to_column: "id", type: "many_to_one", on_delete: "CASCADE" },
-        { from_table: "activity_logs", from_column: "user_id", to_table: "users", to_column: "id", type: "many_to_one", on_delete: "SET NULL" },
-      ],
-      suggestions: [
-        "Consider adding a file_attachments table for task documents with S3/GCS storage references",
-        "Add a tags table with task_tags junction for flexible categorization",
-        "Consider implementing soft deletes with deleted_at columns for data recovery",
-        "Add a notifications table for in-app user notifications",
-      ]
-    };
-
-    setSchema(demoSchema);
-    setError(null);
-  };
 
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -253,6 +84,24 @@ export default function Home() {
           complexity={complexity}
           onComplexityChange={setComplexity}
         />
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 p-4 rounded-xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
+          >
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-medium text-red-800 dark:text-red-200">Schema Generation Failed</p>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           {schema && (
